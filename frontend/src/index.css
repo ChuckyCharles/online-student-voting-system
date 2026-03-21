@@ -3,26 +3,22 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-slate-50 text-slate-900 antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
-  }
+  body { @apply bg-slate-50 text-slate-900 antialiased; }
 }
 
 @layer components {
-  .btn { @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2; }
-  .btn-primary { @apply btn bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white shadow-sm hover:shadow-indigo-200 hover:shadow-lg focus:ring-indigo-500 px-5 py-2.5; }
-  .btn-secondary { @apply btn bg-white hover:bg-slate-50 active:scale-95 text-slate-700 border border-slate-200 shadow-sm focus:ring-slate-400 px-5 py-2.5; }
-  .btn-danger { @apply btn bg-red-500 hover:bg-red-600 active:scale-95 text-white shadow-sm focus:ring-red-500 px-5 py-2.5; }
+  .btn { @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95; }
+  .btn-primary { @apply btn bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm focus:ring-indigo-500 px-5 py-2.5; }
+  .btn-secondary { @apply btn bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm focus:ring-slate-300 px-5 py-2.5; }
+  .btn-danger { @apply btn bg-red-500 hover:bg-red-600 text-white shadow-sm focus:ring-red-400 px-5 py-2.5; }
   .btn-sm { @apply px-3 py-1.5 text-sm rounded-lg; }
 
-  .card { @apply bg-white rounded-2xl shadow-sm border border-slate-100 p-6; }
-  .card-hover { @apply card hover:shadow-md hover:border-slate-200 transition-all duration-200 cursor-pointer; }
+  .card { @apply bg-white rounded-2xl border border-slate-100 shadow-sm p-6; }
 
-  .input { @apply w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm; }
+  .input { @apply w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all; }
 
-  .badge { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide; }
+  .badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold; }
   .badge-active { @apply badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200; }
   .badge-pending { @apply badge bg-amber-50 text-amber-700 ring-1 ring-amber-200; }
-  .badge-ended { @apply badge bg-slate-100 text-slate-500 ring-1 ring-slate-200; }
+  .badge-ended  { @apply badge bg-slate-100 text-slate-500 ring-1 ring-slate-200; }
 }

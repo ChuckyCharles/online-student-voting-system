@@ -17,48 +17,66 @@ export default function AdminElections() {
   }
 
   async function updateStatus(id: string, status: string) {
-    await api(`/admin/elections/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
-    load();
+    await api(`/admin/elections/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }); load();
   }
 
   async function del(id: string) {
-    if (!confirm("Delete this election?")) return;
+    if (!confirm("Delete this election and all its data?")) return;
     await api(`/admin/elections/${id}`, { method: "DELETE" }); load();
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-8">Manage Elections</h1>
-      <div className="card mb-8">
-        <h2 className="font-semibold mb-4">Create Election</h2>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900">Elections</h1>
+        <p className="text-slate-500 text-sm mt-1">Create and manage elections</p>
+      </div>
+
+      <div className="card mb-6">
+        <h2 className="font-semibold text-slate-900 mb-4">New Election</h2>
         <form onSubmit={create} className="flex gap-3">
-          <input className="input flex-1" placeholder="Election title" value={title}
-            onChange={e => setTitle(e.target.value)} required />
+          <input className="input flex-1" placeholder="e.g. Student Council Election 2026"
+            value={title} onChange={e => setTitle(e.target.value)} required />
           <button type="submit" className="btn-primary">Create</button>
         </form>
-        {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>
-      <div className="space-y-4">
-        {elections.map((e) => (
-          <div key={e.id} className="card">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="font-semibold">{e.title}</h2>
-                <p className="text-sm text-gray-500 mt-1">
+
+      <div className="space-y-3">
+        {elections.map(e => (
+          <div key={e.id} className="card hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h2 className="font-semibold text-slate-900 truncate">{e.title}</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
                   {e.positions?.length ?? 0} positions · {e.positions?.reduce((s: number, p: any) => s + p.candidates.length, 0) ?? 0} candidates
                 </p>
               </div>
-              <span className={e.status === "ACTIVE" ? "badge-active" : e.status === "ENDED" ? "badge-ended" : "badge-pending"}>{e.status}</span>
+              <span className={e.status === "ACTIVE" ? "badge-active" : e.status === "ENDED" ? "badge-ended" : "badge-pending"}>
+                {e.status === "ACTIVE" ? "● Live" : e.status}
+              </span>
             </div>
-            <div className="flex flex-wrap gap-2 mt-4">
-              {e.status === "PENDING" && <button onClick={() => updateStatus(e.id, "ACTIVE")} className="btn-primary text-sm py-1.5">Start</button>}
-              {e.status === "ACTIVE" && <button onClick={() => updateStatus(e.id, "ENDED")} className="btn-secondary text-sm py-1.5">End</button>}
-              <Link to={`/admin/elections/${e.id}/positions`} className="btn-secondary text-sm py-1.5">Manage Positions</Link>
-              {e.status === "ENDED" && <Link to={`/results/${e.id}`} className="btn-secondary text-sm py-1.5">View Results</Link>}
-              <button onClick={() => del(e.id)} className="btn-danger text-sm py-1.5">Delete</button>
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-50">
+              {e.status === "PENDING" && (
+                <button onClick={() => updateStatus(e.id, "ACTIVE")} className="btn-primary btn-sm">▶ Start</button>
+              )}
+              {e.status === "ACTIVE" && (
+                <button onClick={() => updateStatus(e.id, "ENDED")} className="btn-secondary btn-sm">⏹ End</button>
+              )}
+              <Link to={`/admin/elections/${e.id}/positions`} className="btn-secondary btn-sm">Manage Positions</Link>
+              {e.status === "ENDED" && (
+                <Link to={`/results/${e.id}`} className="btn-secondary btn-sm">📊 Results</Link>
+              )}
+              <button onClick={() => del(e.id)} className="btn-danger btn-sm ml-auto">Delete</button>
             </div>
           </div>
         ))}
+        {elections.length === 0 && (
+          <div className="card text-center py-12 text-slate-400">
+            <div className="text-3xl mb-2">📋</div>
+            <p>No elections yet. Create one above.</p>
+          </div>
+        )}
       </div>
     </div>
   );
