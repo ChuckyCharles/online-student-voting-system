@@ -1,0 +1,121 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum ElectionStatus {
+  PENDING
+  ACTIVE
+  ENDED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  studentId String   @unique
+  email     String   @unique
+  password  String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+
+  votingTokens VotingToken[]
+
+  @@index([studentId])
+  @@index([email])
+}
+
+model Election {
+  id         String         @id @default(cuid())
+  title      String
+  status     ElectionStatus @default(PENDING)
+  startTime  DateTime?
+  endTime    DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  candidates Candidate[]
+  positions  Position[]
+}
+
+model Position {
+  id         String    @id @default(cuid())
+  name       String
+  electionId String
+  election   Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+
+  candidates  Candidate[]
+  votingTokens VotingToken[]
+
+  @@unique([name, electionId])
+  @@index([electionId])
+}
+
+model Candidate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  electionId  String
+  positionId  String
+  createdAt   DateTime @default(now())
+
+  election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  position Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  votes    Vote[]
+
+  @@index([electionId])
+  @@index([positionId])
+}
+
+// Anonymity: VotingToken links user+position to prove they voted,
+// but Vote has no userId — breaking the link between voter and choice.
+model VotingToken {
+  id         String   @id @default(cuid())
+  userId     String
+  positionId String
+  usedAt     DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
+  // One token per user per position — enforces one vote per position
+  @@unique([userId, positionId])
+  @@index([userId])
+}
+
+model Vote {
+  id          String    @id @default(cuid())
+  candidateId String
+  electionId  String
+  positionId  String
+  timestamp   DateTime  @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+  @@index([electionId])
+  @@index([positionId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  target    String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+  @@index([createdAt])
+}
