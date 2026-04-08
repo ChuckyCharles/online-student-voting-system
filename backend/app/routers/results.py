@@ -17,7 +17,7 @@ def get_results(
     if not election:
         raise HTTPException(404, "Election not found")
 
-    if user.role != models.Role.ADMIN and election.status != models.ElectionStatus.ENDED:
+    if user.role != models.Role.ADMIN.value and election.status != models.ElectionStatus.ENDED:
         raise HTTPException(403, "Results not available yet")
 
     candidates = (
