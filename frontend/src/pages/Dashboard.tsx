@@ -26,7 +26,6 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Header */}
       <div className="mb-8">
         <p className="text-slate-500 text-sm font-medium">{greeting} 👋</p>
         <h1 className="text-3xl font-bold text-slate-900 mt-0.5">{user?.name}</h1>
@@ -34,7 +33,7 @@ export default function Dashboard() {
 
       {loading ? (
         <div className="space-y-4">
-          {[1,2].map(i => <div key={i} className="card h-36 animate-pulse bg-slate-100 border-0" />)}
+          {[1, 2].map(i => <div key={i} className="card h-36 animate-pulse bg-slate-100 border-0" />)}
         </div>
       ) : elections.length === 0 ? (
         <div className="card text-center py-16">
@@ -56,10 +55,11 @@ export default function Dashboard() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <h2 className="text-lg font-semibold text-slate-900 truncate">{e.title}</h2>
+                    {e.description && <p className="text-sm text-slate-400 mt-0.5">{e.description}</p>}
                     <p className="text-sm text-slate-500 mt-0.5">{total} position{total !== 1 ? "s" : ""}</p>
                   </div>
                   <span className={e.status === "ACTIVE" ? "badge-active" : e.status === "ENDED" ? "badge-ended" : "badge-pending"}>
-                    {e.status === "ACTIVE" ? "● Live" : e.status}
+                    {e.status === "ACTIVE" ? "● Live" : e.status === "PENDING" ? "Upcoming" : "Ended"}
                   </span>
                 </div>
 
@@ -78,9 +78,7 @@ export default function Dashboard() {
 
                 <div className="mt-5 flex items-center gap-3">
                   {e.status === "ACTIVE" && !allVoted && (
-                    <Link to={`/vote/${e.id}`} className="btn-primary btn-sm">
-                      Cast Vote →
-                    </Link>
+                    <Link to={`/vote/${e.id}`} className="btn-primary btn-sm">Cast Vote →</Link>
                   )}
                   {e.status === "ACTIVE" && allVoted && (
                     <span className="inline-flex items-center gap-1.5 text-emerald-600 font-semibold text-sm">
@@ -90,6 +88,9 @@ export default function Dashboard() {
                   )}
                   {e.status === "ENDED" && (
                     <Link to={`/results/${e.id}`} className="btn-secondary btn-sm">View Results</Link>
+                  )}
+                  {e.status === "PENDING" && (
+                    <span className="text-sm text-slate-400">Election not started yet</span>
                   )}
                 </div>
               </div>

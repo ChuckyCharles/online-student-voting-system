@@ -16,10 +16,7 @@ app = FastAPI(title="Student Voting API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    # Dev wiring: allow requests from any local origin.
-    # The frontend uses `Authorization: Bearer ...` (no cookies), so credentials aren't required.
-    allow_origin_regex=r"^https?://.*$",
-    allow_credentials=False,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -8,9 +8,16 @@ export default function Navbar() {
   const isAdmin = user?.role === "ADMIN";
 
   const links = isAdmin
-    ? [{ to: "/admin", label: "Dashboard" }, { to: "/admin/elections", label: "Elections" },
-       { to: "/admin/candidates", label: "Candidates" }, { to: "/admin/users", label: "Students" }]
-    : [{ to: "/dashboard", label: "Dashboard" }, { to: "/results", label: "Results" }];
+    ? [
+        { to: "/admin", label: "Dashboard" },
+        { to: "/admin/elections", label: "Elections" },
+        { to: "/admin/candidates", label: "Candidates" },
+        { to: "/admin/users", label: "Students" },
+        { to: "/admin/audit-logs", label: "Audit Logs" },
+      ]
+    : [
+        { to: "/dashboard", label: "Dashboard" },
+      ];
 
   const initials = user?.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) ?? "?";
 

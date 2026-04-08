@@ -4,7 +4,7 @@ import { api } from "../../api";
 
 export default function AdminElections() {
   const [elections, setElections] = useState<any[]>([]);
-  const [title, setTitle] = useState("");
+  const [form, setForm] = useState({ title: "", description: "" });
   const [error, setError] = useState("");
 
   const load = () => api("/admin/elections").then(setElections);
@@ -12,17 +12,22 @@ export default function AdminElections() {
 
   async function create(e: React.FormEvent) {
     e.preventDefault(); setError("");
-    try { await api("/admin/elections", { method: "POST", body: JSON.stringify({ title }) }); setTitle(""); load(); }
-    catch (err: any) { setError(err.message); }
+    try {
+      await api("/admin/elections", { method: "POST", body: JSON.stringify(form) });
+      setForm({ title: "", description: "" });
+      load();
+    } catch (err: any) { setError(err.message); }
   }
 
   async function updateStatus(id: string, status: string) {
-    await api(`/admin/elections/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }); load();
+    await api(`/admin/elections/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+    load();
   }
 
   async function del(id: string) {
     if (!confirm("Delete this election and all its data?")) return;
-    await api(`/admin/elections/${id}`, { method: "DELETE" }); load();
+    await api(`/admin/elections/${id}`, { method: "DELETE" });
+    load();
   }
 
   return (
@@ -34,10 +39,12 @@ export default function AdminElections() {
 
       <div className="card mb-6">
         <h2 className="font-semibold text-slate-900 mb-4">New Election</h2>
-        <form onSubmit={create} className="flex gap-3">
-          <input className="input flex-1" placeholder="e.g. Student Council Election 2026"
-            value={title} onChange={e => setTitle(e.target.value)} required />
-          <button type="submit" className="btn-primary">Create</button>
+        <form onSubmit={create} className="space-y-3">
+          <input className="input" placeholder="Title — e.g. Student Council Election 2026"
+            value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
+          <input className="input" placeholder="Description (optional)"
+            value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+          <button type="submit" className="btn-primary">Create Election</button>
         </form>
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>
@@ -48,7 +55,8 @@ export default function AdminElections() {
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <h2 className="font-semibold text-slate-900 truncate">{e.title}</h2>
-                <p className="text-xs text-slate-500 mt-0.5">
+                {e.description && <p className="text-xs text-slate-400 mt-0.5">{e.description}</p>}
+                <p className="text-xs text-slate-500 mt-1">
                   {e.positions?.length ?? 0} positions · {e.positions?.reduce((s: number, p: any) => s + p.candidates.length, 0) ?? 0} candidates
                 </p>
               </div>

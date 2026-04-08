@@ -12,6 +12,7 @@ import AdminElections from "./pages/admin/AdminElections";
 import AdminPositions from "./pages/admin/AdminPositions";
 import AdminCandidates from "./pages/admin/AdminCandidates";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/admin/elections/:id/positions" element={<AdminPositions />} />
             <Route path="/admin/candidates" element={<AdminCandidates />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
           </Route>
         </Route>
 

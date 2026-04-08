@@ -33,10 +33,12 @@ class UserOut(BaseModel):
 # Elections
 class ElectionCreate(BaseModel):
     title: str
+    description: str | None = None
 
 class ElectionOut(BaseModel):
     id: str
     title: str
+    description: str | None
     status: ElectionStatus
     start_time: datetime | None
     end_time: datetime | None
@@ -95,3 +97,15 @@ class CandidateResult(BaseModel):
 class PositionResult(BaseModel):
     position: str
     candidates: list[CandidateResult]
+
+
+# Audit
+class AuditLogOut(BaseModel):
+    id: str
+    user_id: str
+    action: str
+    target: str | None
+    details: str | None
+    ip_address: str | None
+    created_at: datetime
+    model_config = {"from_attributes": True}

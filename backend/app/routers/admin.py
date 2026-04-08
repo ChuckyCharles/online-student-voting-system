@@ -9,8 +9,8 @@ from app.auth import require_admin
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-def audit(db: Session, admin_id: str, action: str, target: str = None, details: str = None):
-    db.add(models.AuditLog(id=cuid2.cuid(), admin_id=admin_id, action=action, target=target, details=details))
+def audit(db: Session, user_id: str, action: str, target: str = None, details: str = None):
+    db.add(models.AuditLog(id=cuid2.cuid(), user_id=user_id, action=action, target=target, details=details))
     db.commit()
 
 
@@ -25,6 +25,23 @@ def stats(db: Session = Depends(get_db), admin=Depends(require_admin)):
     }
 
 
+# ── Audit Logs ─────────────────────────────────────────────────────────────
+@router.get("/audit-logs", response_model=list[schemas.AuditLogOut])
+def audit_logs(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    admin=Depends(require_admin),
+):
+    return (
+        db.query(models.AuditLog)
+        .order_by(models.AuditLog.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 # ── Elections ──────────────────────────────────────────────────────────────
 @router.get("/elections")
 def list_elections(db: Session = Depends(get_db), admin=Depends(require_admin)):
@@ -35,7 +52,7 @@ def list_elections(db: Session = Depends(get_db), admin=Depends(require_admin)):
 
 @router.post("/elections", status_code=201)
 def create_election(body: schemas.ElectionCreate, db: Session = Depends(get_db), admin=Depends(require_admin)):
-    e = models.Election(id=cuid2.cuid(), title=body.title)
+    e = models.Election(id=cuid2.cuid(), title=body.title, description=body.description)
     db.add(e)
     db.commit()
     db.refresh(e)
