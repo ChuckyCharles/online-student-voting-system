@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 from jose import jwt, JWTError
 from passlib.context import CryptContext
+from passlib.exc import UnknownHashError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -9,7 +10,9 @@ from app.config import settings
 from app.database import get_db
 from app import models
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt 5.x is incompatible with passlib 1.7.4 in this environment.
+# Use pbkdf2_sha256 to keep password hashing functional without native bcrypt.
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 bearer = HTTPBearer()
 
 
@@ -25,7 +28,10 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        return pwd_context.verify(plain, hashed)
+    except UnknownHashError:
+        return False
 
 
 def create_token(data: dict) -> str:

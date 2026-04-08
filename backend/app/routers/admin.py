@@ -10,7 +10,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 def audit(db: Session, user_id: str, action: str, target: str = None, details: str = None):
-    db.add(models.AuditLog(id=cuid2.cuid(), user_id=user_id, action=action, target=target, details=details))
+    db.add(models.AuditLog(id=cuid2.Cuid().generate(), user_id=user_id, action=action, target=target, details=details))
     db.commit()
 
 
@@ -52,7 +52,7 @@ def list_elections(db: Session = Depends(get_db), admin=Depends(require_admin)):
 
 @router.post("/elections", status_code=201)
 def create_election(body: schemas.ElectionCreate, db: Session = Depends(get_db), admin=Depends(require_admin)):
-    e = models.Election(id=cuid2.cuid(), title=body.title, description=body.description)
+    e = models.Election(id=cuid2.Cuid().generate(), title=body.title, description=body.description)
     db.add(e)
     db.commit()
     db.refresh(e)
@@ -95,7 +95,7 @@ def delete_election(election_id: str, db: Session = Depends(get_db), admin=Depen
 # ── Positions ──────────────────────────────────────────────────────────────
 @router.post("/positions", status_code=201)
 def create_position(body: schemas.PositionCreate, db: Session = Depends(get_db), admin=Depends(require_admin)):
-    p = models.Position(id=cuid2.cuid(), name=body.name, election_id=body.election_id)
+    p = models.Position(id=cuid2.Cuid().generate(), name=body.name, election_id=body.election_id)
     db.add(p)
     db.commit()
     db.refresh(p)
@@ -125,7 +125,7 @@ def list_candidates(db: Session = Depends(get_db), admin=Depends(require_admin))
 
 @router.post("/candidates", status_code=201)
 def create_candidate(body: schemas.CandidateCreate, db: Session = Depends(get_db), admin=Depends(require_admin)):
-    c = models.Candidate(id=cuid2.cuid(), **body.model_dump())
+    c = models.Candidate(id=cuid2.Cuid().generate(), **body.model_dump())
     db.add(c)
     db.commit()
     db.refresh(c)

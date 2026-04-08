@@ -29,9 +29,9 @@ def cast_vote(
         raise HTTPException(400, "Invalid candidate")
 
     try:
-        token = models.VotingToken(id=cuid2.cuid(), user_id=user.id, position_id=body.position_id)
+        token = models.VotingToken(id=cuid2.Cuid().generate(), user_id=user.id, position_id=body.position_id)
         vote = models.Vote(
-            id=cuid2.cuid(),
+            id=cuid2.Cuid().generate(),
             candidate_id=body.candidate_id,
             election_id=body.election_id,
             position_id=body.position_id,
@@ -40,7 +40,7 @@ def cast_vote(
         db.add(vote)
         # Audit log — no candidate_id stored to preserve anonymity
         db.add(models.AuditLog(
-            id=cuid2.cuid(),
+            id=cuid2.Cuid().generate(),
             user_id=user.id,
             action="VOTE_CAST",
             target=body.election_id,
