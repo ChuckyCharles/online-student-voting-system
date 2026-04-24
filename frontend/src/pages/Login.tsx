@@ -15,7 +15,7 @@ export default function Login() {
     setLoading(true); setError("");
     try {
       const data = await api("/auth/login", { method: "POST", body: JSON.stringify(form) });
-      login(data.access_token, data.role, data.name);
+      login(data.access_token, data.role, data.name, data.school_id, data.department_id, data.course_id);
       navigate(data.role === "ADMIN" ? "/admin" : "/dashboard");
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }

@@ -20,6 +20,41 @@ enum ElectionStatus {
   ENDED
 }
 
+enum PositionLevel {
+  UNIVERSITY
+  SCHOOL
+  DEPARTMENT
+  CLASS
+}
+
+model School {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  abbreviation String?
+  departments  Department[]
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  courses   Course[]
+
+  @@unique([name, schoolId])
+}
+
+model Course {
+  id           String    @id @default(cuid())
+  name         String
+  code         String?
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  students     User[]
+
+  @@unique([name, departmentId])
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -29,10 +64,21 @@ model User {
   role      Role     @default(STUDENT)
   createdAt DateTime @default(now())
 
+  schoolId     String?
+  departmentId String?
+  courseId     String?
+
+  school     School?    @relation(fields: [schoolId], references: [id])
+  department Department? @relation(fields: [departmentId], references: [id])
+  course     Course?    @relation(fields: [courseId], references: [id])
+
   votingTokens VotingToken[]
 
   @@index([studentId])
   @@index([email])
+  @@index([schoolId])
+  @@index([departmentId])
+  @@index([courseId])
 }
 
 model Election {
@@ -49,33 +95,51 @@ model Election {
 }
 
 model Position {
-  id         String    @id @default(cuid())
+  id         String       @id @default(cuid())
   name       String
   electionId String
-  election   Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  election   Election     @relation(fields: [electionId], references: [id], onDelete: Cascade)
+
+  level       PositionLevel
+  schoolId    String?
+  departmentId String?
+  courseId    String?
+
+  school      School?      @relation(fields: [schoolId], references: [id])
+  department  Department?  @relation(fields: [departmentId], references: [id])
+  course      Course?      @relation(fields: [courseId], references: [id])
 
   candidates  Candidate[]
   votingTokens VotingToken[]
 
   @@unique([name, electionId])
   @@index([electionId])
+  @@index([schoolId])
+  @@index([departmentId])
+  @@index([courseId])
 }
 
 model Candidate {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  imageUrl    String?
-  electionId  String
-  positionId  String
-  createdAt   DateTime @default(now())
+  id            String     @id @default(cuid())
+  name          String
+  description   String?
+  imageUrl      String?
+  electionId    String
+  positionId    String
+  userId        String?
+  runningMateId String?
+  createdAt     DateTime   @default(now())
 
-  election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
-  position Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
-  votes    Vote[]
+  election      Election   @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  position      Position   @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  user          User?      @relation(fields: [userId], references: [id])
+  runningMate   Candidate? @relation("RunningMate", fields: [runningMateId], references: [id])
+  mates         Candidate[] @relation("RunningMate")
+  votes         Vote[]
 
   @@index([electionId])
   @@index([positionId])
+  @@index([userId])
 }
 
 // Anonymity: VotingToken links user+position to prove they voted,

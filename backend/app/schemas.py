@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
-from app.models import Role, ElectionStatus
+from app.models import Role, ElectionStatus, PositionLevel
 
 
 # Auth
@@ -9,6 +9,9 @@ class RegisterIn(BaseModel):
     student_id: str
     email: EmailStr
     password: str
+    school_id: str
+    department_id: str
+    course_id: str
 
 class LoginIn(BaseModel):
     email: EmailStr
@@ -19,6 +22,9 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
     role: str
     name: str
+    school_id: str | None = None
+    department_id: str | None = None
+    course_id: str | None = None
 
 class UserOut(BaseModel):
     id: str
@@ -26,6 +32,9 @@ class UserOut(BaseModel):
     student_id: str
     email: str
     role: Role
+    school_id: str | None = None
+    department_id: str | None = None
+    course_id: str | None = None
     created_at: datetime
     model_config = {"from_attributes": True}
 
@@ -53,11 +62,19 @@ class StatusUpdate(BaseModel):
 class PositionCreate(BaseModel):
     name: str
     election_id: str
+    level: PositionLevel = PositionLevel.UNIVERSITY
+    school_id: str | None = None
+    department_id: str | None = None
+    course_id: str | None = None
 
 class PositionOut(BaseModel):
     id: str
     name: str
     election_id: str
+    level: PositionLevel
+    school_id: str | None = None
+    department_id: str | None = None
+    course_id: str | None = None
     model_config = {"from_attributes": True}
 
 
@@ -104,8 +121,33 @@ class AuditLogOut(BaseModel):
     id: str
     user_id: str
     action: str
-    target: str | None
-    details: str | None
-    ip_address: str | None
+    target: str | None = None
+    details: str | None = None
+    ip_address: str | None = None
     created_at: datetime
     model_config = {"from_attributes": True}
+
+
+# Academic Structure
+class SchoolOut(BaseModel):
+    id: str
+    name: str
+    model_config = {"from_attributes": True}
+
+class DepartmentOut(BaseModel):
+    id: str
+    name: str
+    school_id: str
+    model_config = {"from_attributes": True}
+
+class CourseOut(BaseModel):
+    id: str
+    name: str
+    department_id: str
+    model_config = {"from_attributes": True}
+
+
+class AcademicStructure(BaseModel):
+    schools: list[SchoolOut]
+    departments: list[DepartmentOut]
+    courses: list[CourseOut]

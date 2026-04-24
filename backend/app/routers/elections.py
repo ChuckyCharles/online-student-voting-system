@@ -11,7 +11,7 @@ router = APIRouter(prefix="/elections", tags=["elections"])
 @router.get("", response_model=list[dict])
 def list_elections(
     db: Session = Depends(get_db),
-    _: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_user),
 ):
     elections = db.query(models.Election).options(
         selectinload(models.Election.positions).selectinload(models.Position.candidates)
@@ -19,6 +19,25 @@ def list_elections(
 
     result = []
     for e in elections:
+        positions = []
+        for p in e.positions:
+            # Filter positions based on user's academic scope
+            if p.level == models.PositionLevel.UNIVERSITY:
+                # All users can see university positions
+                positions.append(p)
+            elif p.level == models.PositionLevel.SCHOOL:
+                # Only users from the same school can see school positions
+                if user.school_id == p.school_id:
+                    positions.append(p)
+            elif p.level == models.PositionLevel.DEPARTMENT:
+                # Only users from the same department can see department positions
+                if user.department_id == p.department_id:
+                    positions.append(p)
+            elif p.level == models.PositionLevel.CLASS:
+                # Only users from the same course can see class positions
+                if user.course_id == p.course_id:
+                    positions.append(p)
+        
         result.append({
             "id": e.id,
             "title": e.title,
@@ -29,12 +48,13 @@ def list_elections(
                 {
                     "id": p.id,
                     "name": p.name,
+                    "level": p.level.value if p.level else "UNIVERSITY",
                     "candidates": [
                         {"id": c.id, "name": c.name, "description": c.description}
                         for c in p.candidates
                     ],
                 }
-                for p in e.positions
+                for p in positions
             ],
         })
     return result

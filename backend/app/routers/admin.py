@@ -95,7 +95,15 @@ def delete_election(election_id: str, db: Session = Depends(get_db), admin=Depen
 # ── Positions ──────────────────────────────────────────────────────────────
 @router.post("/positions", status_code=201)
 def create_position(body: schemas.PositionCreate, db: Session = Depends(get_db), admin=Depends(require_admin)):
-    p = models.Position(id=cuid2.Cuid().generate(), name=body.name, election_id=body.election_id)
+    p = models.Position(
+        id=cuid2.Cuid().generate(),
+        name=body.name,
+        election_id=body.election_id,
+        level=body.level,
+        school_id=body.school_id,
+        department_id=body.department_id,
+        course_id=body.course_id,
+    )
     db.add(p)
     db.commit()
     db.refresh(p)
@@ -177,3 +185,47 @@ def delete_user(user_id: str, db: Session = Depends(get_db), admin=Depends(requi
     db.commit()
     audit(db, admin.id, "DELETE_USER", user_id)
     return {"message": "Deleted"}
+
+
+# ── Academic Structure ─────────────────────────────────────────────────────
+@router.get("/schools", response_model=list[schemas.SchoolOut])
+def list_schools(db: Session = Depends(get_db), admin=Depends(require_admin)):
+    return db.query(models.School).all()
+
+@router.get("/departments", response_model=list[schemas.DepartmentOut])
+def list_departments(school_id: str | None = None, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    q = db.query(models.Department)
+    if school_id:
+        q = q.filter(models.Department.school_id == school_id)
+    return q.all()
+
+@router.get("/courses", response_model=list[schemas.CourseOut])
+def list_courses(department_id: str | None = None, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    q = db.query(models.Course)
+    if department_id:
+        q = q.filter(models.Course.department_id == department_id)
+    return q.all()
+
+@router.post("/schools", status_code=201)
+def create_school(body: schemas.SchoolOut, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    s = models.School(id=cuid2.Cuid().generate(), name=body.name)
+    db.add(s)
+    db.commit()
+    db.refresh(s)
+    return s
+
+@router.post("/departments", status_code=201)
+def create_department(body: schemas.DepartmentOut, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    d = models.Department(id=cuid2.Cuid().generate(), name=body.name, school_id=body.school_id)
+    db.add(d)
+    db.commit()
+    db.refresh(d)
+    return d
+
+@router.post("/courses", status_code=201)
+def create_course(body: schemas.CourseOut, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    c = models.Course(id=cuid2.Cuid().generate(), name=body.name, department_id=body.department_id)
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    return c

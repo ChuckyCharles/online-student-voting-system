@@ -1,52 +1,223 @@
-"""Seed the database with test data."""
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 
 import cuid2
 from app.database import SessionLocal, engine, Base
-from app.models import User, Election, Position, Candidate, Role, ElectionStatus
+from app.models import (
+    User, Election, Position, Candidate,
+    Role, ElectionStatus, PositionLevel,
+    School, Department, Course
+)
 from app.auth import hash_password
 
 Base.metadata.create_all(bind=engine)
 db = SessionLocal()
 
+
+def generate_id(prefix):
+    return f"{prefix}-{cuid2.Cuid().generate()[:8]}"
+
+
 def seed():
-    if db.query(User).filter(User.email == "admin@university.edu").first():
-        print("Already seeded.")
-        return
+    print("Seeding database...")
 
-    admin = User(id=cuid2.Cuid().generate(), name="System Admin", student_id="ADMIN001",
-                 email="admin@university.edu", password=hash_password("Admin@123"), role=Role.ADMIN)
-    students = [
-        User(id=cuid2.Cuid().generate(), name=n, student_id=f"STU00{i+1}",
-             email=f"student{i+1}@university.edu", password=hash_password("Student@123"))
-        for i, n in enumerate(["Alice Johnson", "Bob Smith", "Carol White", "David Brown"])
+    # ---------------------------
+    # SCHOOLS
+    # ---------------------------
+    schools_data = [
+        ("school-engineering", "School of Engineering and Technology"),
+        ("school-business", "School of Business"),
+        ("school-education", "School of Education"),
+        ("school-social", "School of Social Sciences"),
+        ("school-health", "School of Health Sciences"),
+        ("school-agriculture", "School of Agriculture and Environmental Sciences"),
     ]
-    db.add_all([admin, *students])
 
-    election = Election(id="election-2026", title="Student Council Election 2026", status=ElectionStatus.PENDING)
+    schools = {}
+    for sid, sname in schools_data:
+        school = School(id=sid, name=sname)
+        db.add(school)
+        schools[sid] = sid
+
+    # ---------------------------
+    # DEPARTMENTS
+    # ---------------------------
+    departments_data = [
+        ("school-engineering", [
+            ("dept-cs", "Department of Computer Science"),
+            ("dept-ee", "Department of Electrical Engineering"),
+        ]),
+        ("school-business", [
+            ("dept-accounting", "Department of Accounting"),
+            ("dept-marketing", "Department of Marketing"),
+        ]),
+        ("school-education", [
+            ("dept-arts-edu", "Department of Arts Education"),
+            ("dept-science-edu", "Department of Science Education"),
+        ]),
+    ]
+
+    departments = {}
+    for school_key, depts in departments_data:
+        for did, dname in depts:
+            dept = Department(
+                id=did,
+                name=dname,
+                school_id=school_key
+            )
+            db.add(dept)
+            departments[did] = did
+
+    # ---------------------------
+    # COURSES
+    # ---------------------------
+    courses_data = [
+        ("dept-cs", [("BSc Computer Science", "CS101"), ("BSc Software Engineering", "SE102")]),
+        ("dept-ee", [("BSc Electrical Engineering", "EE101")]),
+        ("dept-accounting", [("BCom Accounting", "ACC101")]),
+    ]
+
+    courses = {}
+    for dept_id, course_list in courses_data:
+        for cname, ccode in course_list:
+            cid = generate_id("course")
+            course = Course(
+                id=cid,
+                name=cname,
+                code=ccode,   # ✅ matches model
+                department_id=dept_id
+            )
+            db.add(course)
+            courses[cname] = cid
+
+    db.flush()
+
+    # ---------------------------
+    # ADMIN USER
+    # ---------------------------
+    admin = User(
+        id="admin-001",
+        name="Admin",
+        student_id="ADMIN001",
+        email="admin@university.edu",
+        password=hash_password("Admin@123"),
+        role=Role.ADMIN
+    )
+    db.add(admin)
+
+    # ---------------------------
+    # ELECTION
+    # ---------------------------
+    election = Election(
+        id="election-2026",
+        title="Student Council Election 2026",
+        status=ElectionStatus.PENDING
+    )
     db.add(election)
     db.flush()
 
-    pres = Position(id=cuid2.Cuid().generate(), name="President", election_id=election.id)
-    vp   = Position(id=cuid2.Cuid().generate(), name="Vice President", election_id=election.id)
-    sec  = Position(id=cuid2.Cuid().generate(), name="Secretary", election_id=election.id)
-    db.add_all([pres, vp, sec])
+    # ---------------------------
+    # UNIVERSITY POSITIONS
+    # ---------------------------
+    uni_positions = [
+        "President",
+        "Deputy President",
+        "Secretary General",
+        "Treasurer",
+        "Games Captain",
+        "Events and Entertainment Captain",
+        "PWD Representative 1",
+        "PWD Representative 2"
+    ]
+
+    positions = {}
+
+    for pname in uni_positions:
+        pid = generate_id("pos")
+        pos = Position(
+            id=pid,
+            name=pname,
+            election_id=election.id,
+            level=PositionLevel.UNIVERSITY
+        )
+        db.add(pos)
+        positions[pname] = pid
+
     db.flush()
 
-    candidates = [
-        Candidate(id=cuid2.Cuid().generate(), name="Emma Davis",   description="Committed to student welfare",          position_id=pres.id, election_id=election.id),
-        Candidate(id=cuid2.Cuid().generate(), name="Frank Miller",  description="Innovation and progress",               position_id=pres.id, election_id=election.id),
-        Candidate(id=cuid2.Cuid().generate(), name="Grace Lee",     description="Bridging students and faculty",         position_id=vp.id,   election_id=election.id),
-        Candidate(id=cuid2.Cuid().generate(), name="Henry Wilson",  description="Transparency and accountability",       position_id=vp.id,   election_id=election.id),
-        Candidate(id=cuid2.Cuid().generate(), name="Isla Moore",    description="Efficient record-keeping",              position_id=sec.id,  election_id=election.id),
-        Candidate(id=cuid2.Cuid().generate(), name="Jack Taylor",   description="Digital transformation",                position_id=sec.id,  election_id=election.id),
-    ]
-    db.add_all(candidates)
+    # ---------------------------
+    # PRESIDENT CANDIDATE
+    # ---------------------------
+    db.add(Candidate(
+        id=generate_id("cand"),
+        name="John Maina",
+        election_id=election.id,
+        position_id=positions["President"],
+        description="Committed leader"
+    ))
+
+    # ---------------------------
+    # SCHOOL POSITIONS
+    # ---------------------------
+    school_positions = {}
+
+    for sid, sname in schools_data:
+        pos_name = f"{sname} Representative"
+
+        pid = generate_id("pos")
+        pos = Position(
+            id=pid,
+            name=pos_name,
+            election_id=election.id,
+            level=PositionLevel.SCHOOL,
+            school_id=sid
+        )
+        db.add(pos)
+        school_positions[sid] = pid
+
+    db.flush()
+
+    # ---------------------------
+    # DEPARTMENT POSITIONS (FIXED)
+    # ---------------------------
+    dept_positions = {}
+
+    for school_key, depts in departments_data:
+        for did, dname in depts:
+
+            pos_name = f"{dname} Representative"  # ✅ FIX
+
+            pid = generate_id("pos")
+            pos = Position(
+                id=pid,
+                name=pos_name,
+                election_id=election.id,
+                level=PositionLevel.DEPARTMENT,
+                department_id=did,
+                school_id=school_key
+            )
+
+            db.add(pos)
+            dept_positions[did] = pid
+
+    db.flush()
+
+    # ---------------------------
+    # CLASS POSITIONS
+    # ---------------------------
+    for cname, cid in courses.items():
+        pos = Position(
+            id=generate_id("pos"),
+            name=f"{cname} Class Rep",
+            election_id=election.id,
+            level=PositionLevel.CLASS,
+            course_id=cid
+        )
+        db.add(pos)
+
     db.commit()
-    print("✅ Seed complete")
-    print("   Admin:   admin@university.edu / Admin@123")
-    print("   Student: student1@university.edu / Student@123")
+    print("=== Seed Complete ===")
+
 
 seed()
 db.close()

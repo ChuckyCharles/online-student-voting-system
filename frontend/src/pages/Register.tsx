@@ -1,12 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api";
 
+interface School { id: string; name: string; }
+interface Department { id: string; name: string; school_id: string; }
+interface Course { id: string; name: string; department_id: string; }
+
 export default function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", student_id: "", email: "", password: "" });
-  const [error, setError] = useState("");
+  const [form, setForm] = useState({ 
+    name: "", 
+    student_id: "", 
+    email: "", 
+    password: "",
+    school_id: "",
+    department_id: "",
+    course_id: ""
+  });
+  const [schools, setSchools] = useState<School[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api("/auth/schools").then(setSchools).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (form.school_id) {
+      api(`/auth/departments?school_id=${form.school_id}`).then(setDepartments).catch(console.error);
+      setForm(f => ({ ...f, department_id: "", course_id: "" }));
+    }
+  }, [form.school_id]);
+
+  useEffect(() => {
+    if (form.department_id) {
+      api(`/auth/courses?department_id=${form.department_id}`).then(setCourses).catch(console.error);
+      setForm(f => ({ ...f, course_id: "" }));
+    }
+  }, [form.department_id]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -17,13 +50,6 @@ export default function Register() {
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }
   }
-
-  const fields = [
-    { label: "Full Name", key: "name", type: "text", placeholder: "Alice Johnson" },
-    { label: "Student ID", key: "student_id", type: "text", placeholder: "STU001" },
-    { label: "Email", key: "email", type: "email", placeholder: "you@university.edu" },
-    { label: "Password", key: "password", type: "password", placeholder: "••••••••" },
-  ] as const;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
@@ -41,14 +67,53 @@ export default function Register() {
             </div>
           )}
           <form onSubmit={submit} className="space-y-4">
-            {fields.map(({ label, key, type, placeholder }) => (
-              <div key={key}>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>
-                <input type={type} className="input" placeholder={placeholder}
-                  value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} required />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
+              <input type="text" className="input" placeholder="Alice Johnson"
+                value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Student ID</label>
+              <input type="text" className="input" placeholder="STU001"
+                value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+              <input type="email" className="input" placeholder="you@university.edu"
+                value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+              <input type="password" className="input" placeholder="••••••••"
+                value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
+            </div>
+            
+            <div className="border-t border-slate-200 pt-4">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Academic Information</h3>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">School</label>
+                <select className="input" value={form.school_id} onChange={e => setForm({ ...form, school_id: e.target.value })} required>
+                  <option value="">Select School</option>
+                  {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
               </div>
-            ))}
-            <button type="submit" className="btn-primary w-full py-3 mt-2" disabled={loading}>
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Department</label>
+                <select className="input" value={form.department_id} onChange={e => setForm({ ...form, department_id: e.target.value })} required disabled={!form.school_id}>
+                  <option value="">Select Department</option>
+                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Course</label>
+                <select className="input" value={form.course_id} onChange={e => setForm({ ...form, course_id: e.target.value })} required disabled={!form.department_id}>
+                  <option value="">Select Course</option>
+                  {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" className="btn-primary w-full py-3 mt-4" disabled={loading}>
               {loading ? "Creating account…" : "Create Account →"}
             </button>
           </form>
