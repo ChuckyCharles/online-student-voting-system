@@ -14,6 +14,40 @@ def audit(db: Session, user_id: str, action: str, target: str = None, details: s
     db.commit()
 
 
+def _validate_position_scope(db: Session, body: schemas.PositionCreate):
+    if not db.get(models.Election, body.election_id):
+        raise HTTPException(400, "Invalid election_id")
+
+    if body.level == models.PositionLevel.UNIVERSITY:
+        return
+
+    if body.level == models.PositionLevel.SCHOOL:
+        if not body.school_id:
+            raise HTTPException(400, "school_id is required for SCHOOL level")
+        if not db.get(models.School, body.school_id):
+            raise HTTPException(400, "Invalid school_id")
+        return
+
+    if body.level == models.PositionLevel.DEPARTMENT:
+        if not body.school_id or not body.department_id:
+            raise HTTPException(400, "school_id and department_id are required for DEPARTMENT level")
+        dept = db.get(models.Department, body.department_id)
+        if not dept or dept.school_id != body.school_id:
+            raise HTTPException(400, "Invalid department_id for selected school")
+        return
+
+    if body.level == models.PositionLevel.CLASS:
+        if not body.school_id or not body.department_id or not body.course_id:
+            raise HTTPException(400, "school_id, department_id and course_id are required for CLASS level")
+        dept = db.get(models.Department, body.department_id)
+        course = db.get(models.Course, body.course_id)
+        if not dept or dept.school_id != body.school_id:
+            raise HTTPException(400, "Invalid department_id for selected school")
+        if not course or course.department_id != body.department_id:
+            raise HTTPException(400, "Invalid course_id for selected department")
+        return
+
+
 # ── Stats ──────────────────────────────────────────────────────────────────
 @router.get("/stats")
 def stats(db: Session = Depends(get_db), admin=Depends(require_admin)):
@@ -95,6 +129,7 @@ def delete_election(election_id: str, db: Session = Depends(get_db), admin=Depen
 # ── Positions ──────────────────────────────────────────────────────────────
 @router.post("/positions", status_code=201)
 def create_position(body: schemas.PositionCreate, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    _validate_position_scope(db, body)
     p = models.Position(
         id=cuid2.Cuid().generate(),
         name=body.name,
@@ -133,6 +168,23 @@ def list_candidates(db: Session = Depends(get_db), admin=Depends(require_admin))
 
 @router.post("/candidates", status_code=201)
 def create_candidate(body: schemas.CandidateCreate, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    election = db.get(models.Election, body.election_id)
+    if not election:
+        raise HTTPException(400, "Invalid election_id")
+
+    position = db.get(models.Position, body.position_id)
+    if not position:
+        raise HTTPException(400, "Invalid position_id")
+    if position.election_id != body.election_id:
+        raise HTTPException(400, "Position does not belong to selected election")
+
+    duplicate = db.query(models.Candidate).filter(
+        models.Candidate.position_id == body.position_id,
+        models.Candidate.name == body.name,
+    ).first()
+    if duplicate:
+        raise HTTPException(409, "Candidate with this name already exists for the position")
+
     c = models.Candidate(id=cuid2.Cuid().generate(), **body.model_dump())
     db.add(c)
     db.commit()

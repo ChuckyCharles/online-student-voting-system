@@ -2,11 +2,23 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../api";
 
+const LEVELS = ["UNIVERSITY", "SCHOOL", "DEPARTMENT", "CLASS"] as const;
+type PositionLevel = (typeof LEVELS)[number];
+
 export default function AdminPositions() {
   const { id: electionId } = useParams<{ id: string }>();
   const [election, setElection] = useState<any>(null);
-  const [posName, setPosName] = useState("");
+  const [posForm, setPosForm] = useState({
+    name: "",
+    level: "UNIVERSITY" as PositionLevel,
+    school_id: "",
+    department_id: "",
+    course_id: "",
+  });
   const [candForm, setCandForm] = useState({ name: "", description: "", position_id: "" });
+  const [schools, setSchools] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -15,10 +27,43 @@ export default function AdminPositions() {
   }, [electionId]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    api("/admin/schools").then(setSchools).catch(() => setSchools([]));
+  }, []);
+
+  useEffect(() => {
+    if (!posForm.school_id) {
+      setDepartments([]);
+      setCourses([]);
+      return;
+    }
+    api(`/admin/departments?school_id=${posForm.school_id}`).then(setDepartments).catch(() => setDepartments([]));
+  }, [posForm.school_id]);
+
+  useEffect(() => {
+    if (!posForm.department_id) {
+      setCourses([]);
+      return;
+    }
+    api(`/admin/courses?department_id=${posForm.department_id}`).then(setCourses).catch(() => setCourses([]));
+  }, [posForm.department_id]);
 
   async function addPosition(e: React.FormEvent) {
     e.preventDefault(); setError("");
-    try { await api("/admin/positions", { method: "POST", body: JSON.stringify({ name: posName, election_id: electionId }) }); setPosName(""); load(); }
+    try {
+      const payload: any = {
+        name: posForm.name,
+        election_id: electionId,
+        level: posForm.level,
+      };
+      if (posForm.level !== "UNIVERSITY") payload.school_id = posForm.school_id;
+      if (posForm.level === "DEPARTMENT" || posForm.level === "CLASS") payload.department_id = posForm.department_id;
+      if (posForm.level === "CLASS") payload.course_id = posForm.course_id;
+
+      await api("/admin/positions", { method: "POST", body: JSON.stringify(payload) });
+      setPosForm({ name: "", level: "UNIVERSITY", school_id: "", department_id: "", course_id: "" });
+      load();
+    }
     catch (err: any) { setError(err.message); }
   }
 
@@ -48,10 +93,57 @@ export default function AdminPositions() {
       <div className="grid lg:grid-cols-2 gap-5 mb-8">
         <div className="card">
           <h2 className="font-semibold text-slate-900 mb-4">Add Position</h2>
-          <form onSubmit={addPosition} className="flex gap-3">
-            <input className="input flex-1" placeholder="e.g. President"
-              value={posName} onChange={e => setPosName(e.target.value)} required />
-            <button type="submit" className="btn-primary">Add</button>
+          <form onSubmit={addPosition} className="space-y-3">
+            <input
+              className="input"
+              placeholder="e.g. President"
+              value={posForm.name}
+              onChange={e => setPosForm({ ...posForm, name: e.target.value })}
+              required
+            />
+            <select
+              className="input"
+              value={posForm.level}
+              onChange={e => setPosForm({ ...posForm, level: e.target.value as PositionLevel, school_id: "", department_id: "", course_id: "" })}
+            >
+              {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+            {posForm.level !== "UNIVERSITY" && (
+              <select
+                className="input"
+                value={posForm.school_id}
+                onChange={e => setPosForm({ ...posForm, school_id: e.target.value, department_id: "", course_id: "" })}
+                required
+              >
+                <option value="">Select school…</option>
+                {schools.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            )}
+            {(posForm.level === "DEPARTMENT" || posForm.level === "CLASS") && (
+              <select
+                className="input"
+                value={posForm.department_id}
+                onChange={e => setPosForm({ ...posForm, department_id: e.target.value, course_id: "" })}
+                required
+                disabled={!posForm.school_id}
+              >
+                <option value="">Select department…</option>
+                {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            )}
+            {posForm.level === "CLASS" && (
+              <select
+                className="input"
+                value={posForm.course_id}
+                onChange={e => setPosForm({ ...posForm, course_id: e.target.value })}
+                required
+                disabled={!posForm.department_id}
+              >
+                <option value="">Select course…</option>
+                {courses.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            )}
+            <button type="submit" className="btn-primary w-full">Add Position</button>
           </form>
         </div>
 
@@ -80,6 +172,7 @@ export default function AdminPositions() {
                 <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block" />
                 {pos.name}
                 <span className="text-xs text-slate-400 font-normal">({pos.candidates.length} candidates)</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">{pos.level ?? "UNIVERSITY"}</span>
               </h2>
               <button onClick={async () => { if (confirm("Delete this position and all its candidates?")) { await api(`/admin/positions/${pos.id}`, { method: "DELETE" }); load(); } }}
                 className="text-red-400 hover:text-red-600 text-xs font-semibold transition-colors">

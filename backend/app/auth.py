@@ -1,75 +1,77 @@
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime, timedelta
+from dataclasses import dataclass
+from jose import jwt, JWTError
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from passlib.context import CryptContext
-from .database import get_db
-from .models import User
+import hashlib
+import bcrypt
+from app.config import settings
+from app.database import get_db
+from app import models
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+bearer = HTTPBearer()
 
-def hash_password(password: str):
-    return pwd_context.hash(password)
 
-def verify_password(plain_password: str, hashed_password: str):
-    return pwd_context.verify(plain_password, hashed_password)
-
-# Pydantic Schemas
-class RegisterRequest(BaseModel):
-    name: str
+@dataclass(frozen=True)
+class CurrentUser:
+    id: str
+    role: str
     email: str
-    student_id: str
-    password: str
     school_id: str | None = None
     department_id: str | None = None
     course_id: str | None = None
 
-class LoginRequest(BaseModel):
-    email: str
-    password: str
 
-router = APIRouter()
+def hash_password(password: str) -> str:
+    normalized = hashlib.sha256(password.encode("utf-8")).hexdigest().encode("ascii")
+    return bcrypt.hashpw(normalized, bcrypt.gensalt()).decode("utf-8")
 
-# REGISTER
-@router.post("/register")
-def register(data: RegisterRequest, db: Session = Depends(get_db)):
-    # Check if user exists
-    if db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    hashed_pw = hash_password(data.password)
-    new_user = User(
-        id=f"user-{data.student_id}",
-        name=data.name,
-        email=data.email,
-        student_id=data.student_id,
-        password=hashed_pw,
-        school_id=data.school_id,
-        department_id=data.department_id,
-        course_id=data.course_id
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return {"message": "User registered successfully"}
 
-# LOGIN
-@router.post("/login")
-def login(data: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == data.email).first()
+def verify_password(plain: str, hashed: str) -> bool:
+    if not hashed:
+        return False
+    normalized = hashlib.sha256(plain.encode("utf-8")).hexdigest().encode("ascii")
+    try:
+        return bcrypt.checkpw(normalized, hashed.encode("utf-8"))
+    except Exception:
+        return False
+
+
+def create_token(data: dict) -> str:
+    payload = data.copy()
+    payload["exp"] = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer),
+    db: Session = Depends(get_db),
+) -> CurrentUser:
+    try:
+        payload = jwt.decode(credentials.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    user = db.get(models.User, user_id)
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-    if not verify_password(data.password, user.password):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
+    return CurrentUser(
+        id=user.id,
+        role=user.role.value if hasattr(user.role, "value") else str(user.role),
+        email=user.email,
+        school_id=user.school_id,
+        department_id=user.department_id,
+        course_id=user.course_id,
+    )
 
-    # Return user info (or JWT if you implement token)
-    return {
-        "message": "Login successful",
-        "user": {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "role": user.role
-        }
-    }
+
+def require_admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    if user.role != models.Role.ADMIN.value:
+        raise HTTPException(status_code=403, detail="Admin only")
+    return user

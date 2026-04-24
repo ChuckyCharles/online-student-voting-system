@@ -57,6 +57,18 @@ export default function Dashboard() {
                     <h2 className="text-lg font-semibold text-slate-900 truncate">{e.title}</h2>
                     {e.description && <p className="text-sm text-slate-400 mt-0.5">{e.description}</p>}
                     <p className="text-sm text-slate-500 mt-0.5">{total} position{total !== 1 ? "s" : ""}</p>
+                    {total > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {e.positions.map((p: any) => (
+                          <span
+                            key={p.id}
+                            className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600"
+                          >
+                            {p.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <span className={e.status === "ACTIVE" ? "badge-active" : e.status === "ENDED" ? "badge-ended" : "badge-pending"}>
                     {e.status === "ACTIVE" ? "● Live" : e.status === "PENDING" ? "Upcoming" : "Ended"}

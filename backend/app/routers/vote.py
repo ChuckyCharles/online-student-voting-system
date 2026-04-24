@@ -9,6 +9,18 @@ from app.auth import get_current_user
 router = APIRouter(prefix="/vote", tags=["vote"])
 
 
+def _is_position_visible_to_user(position: models.Position, user) -> bool:
+    if position.level == models.PositionLevel.UNIVERSITY:
+        return True
+    if position.level == models.PositionLevel.SCHOOL:
+        return bool(user.school_id and user.school_id == position.school_id)
+    if position.level == models.PositionLevel.DEPARTMENT:
+        return bool(user.department_id and user.department_id == position.department_id)
+    if position.level == models.PositionLevel.CLASS:
+        return bool(user.course_id and user.course_id == position.course_id)
+    return False
+
+
 @router.post("", status_code=201)
 def cast_vote(
     body: schemas.VoteIn,
@@ -27,6 +39,12 @@ def cast_vote(
     ).first()
     if not candidate:
         raise HTTPException(400, "Invalid candidate")
+
+    position = db.get(models.Position, body.position_id)
+    if not position:
+        raise HTTPException(400, "Invalid position")
+    if not _is_position_visible_to_user(position, user):
+        raise HTTPException(403, "You are not allowed to vote for this position")
 
     try:
         token = models.VotingToken(id=cuid2.Cuid().generate(), user_id=user.id, position_id=body.position_id)
