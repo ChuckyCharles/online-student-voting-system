@@ -11,6 +11,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminElections from "./pages/admin/AdminElections";
 import AdminPositions from "./pages/admin/AdminPositions";
 import AdminCandidates from "./pages/admin/AdminCandidates";
+import AdminSchools from "./pages/admin/AdminSchools";
+import AdminDepartments from "./pages/admin/AdminDepartments";
+import AdminCourses from "./pages/admin/AdminCourses";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 
@@ -30,17 +33,20 @@ export default function App() {
           </Route>
         </Route>
 
-        {/* Admin routes */}
-        <Route element={<RequireAuth admin />}>
-          <Route element={<Layout />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/elections" element={<AdminElections />} />
-            <Route path="/admin/elections/:id/positions" element={<AdminPositions />} />
-            <Route path="/admin/candidates" element={<AdminCandidates />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
-          </Route>
-        </Route>
+         {/* Admin routes */}
+         <Route element={<RequireAuth admin />}>
+           <Route element={<Layout />}>
+             <Route path="/admin" element={<AdminDashboard />} />
+             <Route path="/admin/elections" element={<AdminElections />} />
+             <Route path="/admin/elections/:id/positions" element={<AdminPositions />} />
+             <Route path="/admin/candidates" element={<AdminCandidates />} />
+             <Route path="/admin/schools" element={<AdminSchools />} />
+             <Route path="/admin/departments" element={<AdminDepartments />} />
+             <Route path="/admin/courses" element={<AdminCourses />} />
+             <Route path="/admin/users" element={<AdminUsers />} />
+             <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+           </Route>
+         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

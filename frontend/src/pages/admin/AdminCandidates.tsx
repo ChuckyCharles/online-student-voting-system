@@ -12,7 +12,11 @@ export default function AdminCandidates() {
     e.preventDefault();
     await api(`/admin/candidates/${editing.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ name: editing.name, description: editing.description }),
+      body: JSON.stringify({ 
+        name: editing.name, 
+        description: editing.description,
+        image_url: editing.image_url
+      }),
     });
     setEditing(null); load();
   }
@@ -28,23 +32,29 @@ export default function AdminCandidates() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card w-full max-w-md shadow-2xl">
             <h2 className="font-semibold text-slate-900 mb-5">Edit Candidate</h2>
-            <form onSubmit={saveEdit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
-                <input className="input" value={editing.name}
-                  onChange={e => setEditing({ ...editing, name: e.target.value })} required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
-                <input className="input" placeholder="Optional tagline"
-                  value={editing.description ?? ""}
-                  onChange={e => setEditing({ ...editing, description: e.target.value })} />
-              </div>
-              <div className="flex gap-3 pt-1">
-                <button type="submit" className="btn-primary flex-1">Save Changes</button>
-                <button type="button" onClick={() => setEditing(null)} className="btn-secondary flex-1">Cancel</button>
-              </div>
-            </form>
+             <form onSubmit={saveEdit} className="space-y-4">
+               <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
+                 <input className="input" value={editing.name}
+                   onChange={e => setEditing({ ...editing, name: e.target.value })} required />
+               </div>
+               <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+                 <input className="input" placeholder="Optional tagline"
+                   value={editing.description ?? ""}
+                   onChange={e => setEditing({ ...editing, description: e.target.value })} />
+               </div>
+               <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Image URL</label>
+                 <input className="input" placeholder="Optional image URL"
+                   value={editing.image_url ?? ""}
+                   onChange={e => setEditing({ ...editing, image_url: e.target.value })} />
+               </div>
+               <div className="flex gap-3 pt-1">
+                 <button type="submit" className="btn-primary flex-1">Save Changes</button>
+                 <button type="button" onClick={() => setEditing(null)} className="btn-secondary flex-1">Cancel</button>
+               </div>
+             </form>
           </div>
         </div>
       )}
@@ -71,8 +81,8 @@ export default function AdminCandidates() {
                 <td className="px-5 py-3.5 text-slate-500 text-xs max-w-[180px] truncate">{c.election?.title}</td>
                 <td className="px-5 py-3.5 text-right">
                   <div className="flex items-center justify-end gap-3">
-                    <button onClick={() => setEditing({ id: c.id, name: c.name, description: c.description ?? "" })}
-                      className="text-indigo-500 hover:text-indigo-700 text-xs font-semibold transition-colors">Edit</button>
+                     <button onClick={() => setEditing({ id: c.id, name: c.name, description: c.description ?? "", image_url: c.image_url ?? "" })}
+                       className="text-indigo-500 hover:text-indigo-700 text-xs font-semibold transition-colors">Edit</button>
                     <button onClick={async () => { if (confirm("Delete this candidate?")) { await api(`/admin/candidates/${c.id}`, { method: "DELETE" }); load(); } }}
                       className="text-red-400 hover:text-red-600 text-xs font-semibold transition-colors">Delete</button>
                   </div>

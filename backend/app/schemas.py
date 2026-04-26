@@ -44,6 +44,23 @@ class ElectionCreate(BaseModel):
     title: str
     description: str | None = None
 
+class PositionInElection(BaseModel):
+    id: str
+    name: str
+    level: PositionLevel
+    school_id: str | None = None
+    department_id: str | None = None
+    course_id: str | None = None
+    candidates: list["CandidateInElection"] = []
+    model_config = {"from_attributes": True}
+
+class CandidateInElection(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    image_url: str | None = None
+    model_config = {"from_attributes": True}
+
 class ElectionOut(BaseModel):
     id: str
     title: str
@@ -52,6 +69,7 @@ class ElectionOut(BaseModel):
     start_time: datetime | None
     end_time: datetime | None
     created_at: datetime
+    positions: list[PositionInElection] = []
     model_config = {"from_attributes": True}
 
 class StatusUpdate(BaseModel):
@@ -82,19 +100,34 @@ class PositionOut(BaseModel):
 class CandidateCreate(BaseModel):
     name: str
     description: str | None = None
+    image_url: str | None = None
     position_id: str
     election_id: str
 
 class CandidateUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
+    image_url: str | None = None
+
+class PositionForCandidate(BaseModel):
+    id: str
+    name: str
+    model_config = {"from_attributes": True}
+
+class ElectionForCandidate(BaseModel):
+    id: str
+    title: str
+    model_config = {"from_attributes": True}
 
 class CandidateOut(BaseModel):
     id: str
     name: str
     description: str | None
+    image_url: str | None
     position_id: str
     election_id: str
+    position: PositionForCandidate | None = None
+    election: ElectionForCandidate | None = None
     model_config = {"from_attributes": True}
 
 
@@ -128,17 +161,37 @@ class AuditLogOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# Academic Structure
+# Academic Structure  
 class SchoolOut(BaseModel):
     id: str
     name: str
     model_config = {"from_attributes": True}
+
+
+class SchoolUpdate(BaseModel):
+    name: str | None = None
+
+
+class SchoolCreate(BaseModel):
+    name: str
+
 
 class DepartmentOut(BaseModel):
     id: str
     name: str
     school_id: str
     model_config = {"from_attributes": True}
+
+
+class DepartmentUpdate(BaseModel):
+    name: str | None = None
+    school_id: str | None = None
+
+
+class DepartmentCreate(BaseModel):
+    name: str
+    school_id: str
+
 
 class CourseOut(BaseModel):
     id: str
@@ -147,7 +200,11 @@ class CourseOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class AcademicStructure(BaseModel):
-    schools: list[SchoolOut]
-    departments: list[DepartmentOut]
-    courses: list[CourseOut]
+class CourseUpdate(BaseModel):
+    name: str | None = None
+    department_id: str | None = None
+
+
+class CourseCreate(BaseModel):
+    name: str
+    department_id: str

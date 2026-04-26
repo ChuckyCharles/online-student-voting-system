@@ -193,6 +193,7 @@ class Candidate(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
     election_id: Mapped[str] = mapped_column(
         ForeignKey("elections.id", ondelete="CASCADE"), index=True
