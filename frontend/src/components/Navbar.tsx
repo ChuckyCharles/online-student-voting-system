@@ -26,15 +26,21 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex justify-between h-16 items-center">
         <div className="flex items-center gap-6">
           <Link to={isAdmin ? "/admin" : "/dashboard"}
-            className="flex items-center gap-2 font-bold text-slate-900 hover:text-indigo-600 transition-colors">
-            <span className="text-xl">🗳️</span><span className="text-lg">VoteSystem</span>
+            className="flex items-center gap-2 font-bold text-slate-900 hover:text-indigo-600 transition-colors group">
+            {/* Gradient logo icon */}
+            <div className="gradient-icon w-9 h-9">
+              <span className="text-lg">🗳️</span>
+            </div>
+            <span className="text-lg bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:from-indigo-700 group-hover:to-purple-700 transition-all">
+              VoteSystem
+            </span>
           </Link>
           <div className="hidden sm:flex items-center gap-1">
             {links.map(l => (
               <Link key={l.to} to={l.to}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   pathname === l.to
-                    ? "bg-indigo-50 text-indigo-700"
+                    ? "bg-indigo-50 text-indigo-700 shadow-sm"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}>
                 {l.label}
@@ -46,9 +52,14 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           {isAdmin && <span className="badge-active hidden sm:inline-flex">Admin</span>}
           <span className="hidden sm:block text-sm font-medium text-slate-700">{user?.name}</span>
-          <div className="w-8 h-8 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center select-none">
-            {initials}
+          
+          {/* Polished avatar with gradient ring */}
+          <div className="avatar-ring p-0.5">
+            <div className="avatar-inner w-8 h-8">
+              <span className="text-xs font-bold text-indigo-600">{initials}</span>
+            </div>
           </div>
+          
           <button onClick={() => { logout(); navigate("/login"); }}
             className="btn-secondary btn-sm hidden sm:inline-flex">
             Sign out
