@@ -105,8 +105,8 @@ def list_elections(db: Session = Depends(get_db), admin=Depends(require_admin)):
                         schemas.CandidateInElection(
                             id=c.id,
                             name=c.name,
-                            description=c.description,
-                            image_url=c.image_url,
+                             description=c.description,
+                            photo_url=c.image_url,
                         )
                         for c in p.candidates
                     ],
@@ -128,6 +128,30 @@ def create_election(body: schemas.ElectionCreate, db: Session = Depends(get_db),
     return e
 
 
+@router.patch("/elections/{election_id}/times", response_model=schemas.ElectionOut)
+def update_election_times(
+    election_id: str,
+    body: schemas.ElectionTimeUpdate,
+    db: Session = Depends(get_db),
+    admin=Depends(require_admin),
+):
+    """Update the start_time and/or end_time of an election."""
+    e = db.get(models.Election, election_id)
+    if not e:
+        raise HTTPException(404, "Not found")
+    
+    if body.start_time is not None:
+        e.start_time = body.start_time
+    if body.end_time is not None:
+        e.end_time = body.end_time
+    
+    db.commit()
+    db.refresh(e)
+    audit(db, admin.id, "UPDATE_ELECTION_TIMES", election_id, 
+          f"start={body.start_time}, end={body.end_time}")
+    return e
+
+
 @router.patch("/elections/{election_id}", response_model=schemas.ElectionOut)
 def update_election_status(
     election_id: str,
@@ -146,6 +170,44 @@ def update_election_status(
     db.commit()
     db.refresh(e)
     audit(db, admin.id, "UPDATE_ELECTION_STATUS", election_id, body.status)
+    return e
+
+
+@router.patch("/elections/{election_id}/pause", response_model=schemas.ElectionOut)
+def pause_election(
+    election_id: str,
+    db: Session = Depends(get_db),
+    admin=Depends(require_admin),
+):
+    """Pause an active election."""
+    e = db.get(models.Election, election_id)
+    if not e:
+        raise HTTPException(404, "Not found")
+    if e.status != models.ElectionStatus.ACTIVE:
+        raise HTTPException(400, "Only active elections can be paused")
+    e.status = models.ElectionStatus.PAUSED
+    db.commit()
+    db.refresh(e)
+    audit(db, admin.id, "PAUSE_ELECTION", election_id)
+    return e
+
+
+@router.patch("/elections/{election_id}/resume", response_model=schemas.ElectionOut)
+def resume_election(
+    election_id: str,
+    db: Session = Depends(get_db),
+    admin=Depends(require_admin),
+):
+    """Resume a paused election."""
+    e = db.get(models.Election, election_id)
+    if not e:
+        raise HTTPException(404, "Not found")
+    if e.status != models.ElectionStatus.PAUSED:
+        raise HTTPException(400, "Only paused elections can be resumed")
+    e.status = models.ElectionStatus.ACTIVE
+    db.commit()
+    db.refresh(e)
+    audit(db, admin.id, "RESUME_ELECTION", election_id)
     return e
 
 
@@ -204,7 +266,7 @@ def list_candidates(db: Session = Depends(get_db), admin=Depends(require_admin))
             id=c.id,
             name=c.name,
             description=c.description,
-            image_url=c.image_url,
+            photo_url=c.image_url,
             position_id=c.position_id,
             election_id=c.election_id,
             position=schemas.PositionForCandidate(id=c.position.id, name=c.position.name) if c.position else None,
@@ -233,7 +295,12 @@ def create_candidate(body: schemas.CandidateCreate, db: Session = Depends(get_db
     if duplicate:
         raise HTTPException(409, "Candidate with this name already exists for the position")
 
-    c = models.Candidate(id=cuid2.Cuid().generate(), **body.model_dump())
+    # Convert photo_url from schema to image_url for model
+    candidate_data = body.model_dump()
+    if 'photo_url' in candidate_data:
+        candidate_data['image_url'] = candidate_data.pop('photo_url')
+    
+    c = models.Candidate(id=cuid2.Cuid().generate(), **candidate_data)
     db.add(c)
     db.commit()
     db.refresh(c)
@@ -251,7 +318,13 @@ def update_candidate(
     c = db.get(models.Candidate, candidate_id)
     if not c:
         raise HTTPException(404, "Not found")
-    for k, v in body.model_dump(exclude_none=True).items():
+    
+    update_data = body.model_dump(exclude_none=True)
+    # Map photo_url to image_url
+    if 'photo_url' in update_data:
+        update_data['image_url'] = update_data.pop('photo_url')
+    
+    for k, v in update_data.items():
         setattr(c, k, v)
     db.commit()
     db.refresh(c)
@@ -268,6 +341,79 @@ def delete_candidate(candidate_id: str, db: Session = Depends(get_db), admin=Dep
     db.commit()
     audit(db, admin.id, "DELETE_CANDIDATE", candidate_id)
     return {"message": "Deleted"}
+
+
+# ── Candidate Photo ──────────────────────────────────────────────────────────
+from fastapi import UploadFile, File
+import os
+import tempfile
+from pathlib import Path
+
+@router.post("/candidates/{candidate_id}/photo", status_code=201)
+def upload_candidate_photo(
+    candidate_id: str,
+    photo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    admin=Depends(require_admin),
+):
+    """Upload or replace a candidate's photo."""
+    candidate = db.get(models.Candidate, candidate_id)
+    if not candidate:
+        raise HTTPException(404, "Candidate not found")
+
+    # Validate file type
+    allowed_types = ["image/jpeg", "image/png", "image/webp"]
+    if photo.content_type not in allowed_types:
+        raise HTTPException(400, "Only JPEG, PNG, and WebP images are allowed")
+
+    # Validate file size (5MB max)
+    MAX_SIZE = 5 * 1024 * 1024
+    contents = photo.file.read()
+    if len(contents) > MAX_SIZE:
+        raise HTTPException(400, "File exceeds 5MB limit")
+
+    # Delete old photo if exists
+    if candidate.image_url:
+        # In a real system with cloud storage, delete from S3/Supabase here
+        # For now, we just remove the reference
+        pass
+
+    # Generate storage key and URL
+    ext = photo.content_type.split("/")[1]
+    
+    # For this implementation, we'll store as a data URL
+    import base64
+    image_url = f"data:{photo.content_type};base64,{base64.b64encode(contents).decode()}"
+
+    candidate.image_url = image_url
+    db.commit()
+    db.refresh(candidate)
+
+    audit(db, admin.id, "UPLOAD_CANDIDATE_PHOTO", candidate_id, f"Photo uploaded for {candidate.name}")
+    return {"photo_url": image_url}
+
+
+@router.delete("/candidates/{candidate_id}/photo")
+def delete_candidate_photo(
+    candidate_id: str,
+    db: Session = Depends(get_db),
+    admin=Depends(require_admin),
+):
+    """Remove a candidate's photo."""
+    candidate = db.get(models.Candidate, candidate_id)
+    if not candidate:
+        raise HTTPException(404, "Candidate not found")
+
+    # Delete from storage if needed
+    if candidate.image_url:
+        # In a real system, delete from S3/Supabase here
+        pass
+
+    candidate.image_url = None
+    db.commit()
+
+    audit(db, admin.id, "DELETE_CANDIDATE_PHOTO", candidate_id, f"Photo deleted for {candidate.name}")
+    return {"message": "Photo deleted"}
 
 
 # ── Users ──────────────────────────────────────────────────────────────────
@@ -312,6 +458,7 @@ def create_school(body: schemas.SchoolCreate, db: Session = Depends(get_db), adm
     db.add(s)
     db.commit()
     db.refresh(s)
+    audit(db, admin.id, "CREATE_SCHOOL", s.id, s.name)
     return s
 
 @router.post("/departments", status_code=201, response_model=schemas.DepartmentOut)
@@ -320,14 +467,16 @@ def create_department(body: schemas.DepartmentCreate, db: Session = Depends(get_
     db.add(d)
     db.commit()
     db.refresh(d)
+    audit(db, admin.id, "CREATE_DEPARTMENT", d.id, d.name)
     return d
 
 @router.post("/courses", status_code=201, response_model=schemas.CourseOut)
 def create_course(body: schemas.CourseCreate, db: Session = Depends(get_db), admin=Depends(require_admin)):
-    c = models.Course(id=cuid2.Cuid().generate(), name=body.name, department_id=body.department_id)
+    c = models.Course(id=cuid2.Cuid().generate(), name=body.name, department_id=body.department_id, code=body.code)
     db.add(c)
     db.commit()
     db.refresh(c)
+    audit(db, admin.id, "CREATE_COURSE", c.id, c.name)
     return c
 
 
@@ -413,6 +562,8 @@ def update_course(
         raise HTTPException(404, "Not found")
     if body.name is not None:
         course.name = body.name
+    if body.code is not None:
+        course.code = body.code
     if body.department_id is not None:
         if not db.get(models.Department, body.department_id):
             raise HTTPException(400, "Invalid department_id")

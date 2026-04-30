@@ -412,7 +412,7 @@ def test_create_candidate():
     candidate_data = {
         "name": "New Candidate",
         "description": "Candidate description",
-        "image_url": "http://example.com/new.jpg",
+
         "position_id": "position-test-001",
         "election_id": "election-test-001"
     }

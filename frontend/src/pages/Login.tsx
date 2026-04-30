@@ -22,35 +22,45 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Brand panel */}
-      <div className="hidden lg:flex flex-col justify-between bg-indigo-600 p-14 text-white">
-        <span className="text-xl font-bold tracking-tight">🗳️ VoteSystem</span>
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Left Section - Hidden on small screens */}
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-b from-blue-600 to-indigo-700 text-white p-12 flex-col justify-between">
         <div>
-          <h2 className="text-5xl font-extrabold leading-tight mb-5">Your voice.<br/>Your vote.</h2>
-          <p className="text-indigo-200 text-lg mb-10">Secure, anonymous student council elections — built for transparency.</p>
+          <div className="text-xl font-semibold tracking-tight mb-8">🗳️ VoteSystem</div>
+          <h1 className="text-5xl font-bold leading-tight mb-4">
+            Your voice.<br />
+            Your vote.
+          </h1>
+          <p className="text-blue-100 text-lg mb-8">Secure, anonymous student elections — built for transparency.</p>
           <div className="space-y-3">
-            {["Anonymous — your identity stays private", "One vote per position, enforced at DB level", "Live results once elections close"].map(f => (
-              <div key={f} className="flex items-center gap-3 text-indigo-100 text-sm">
-                <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-xs">✓</div>
-                {f}
-              </div>
-            ))}
+            <div className="flex items-center gap-3 text-blue-100">
+              <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">✓</span>
+              Anonymous — your identity stays private
+            </div>
+            <div className="flex items-center gap-3 text-blue-100">
+              <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">✓</span>
+              One vote per position (DB enforced)
+            </div>
+            <div className="flex items-center gap-3 text-blue-100">
+              <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">✓</span>
+              Live results after elections close
+            </div>
           </div>
         </div>
-        <p className="text-indigo-300 text-sm">© 2026 Student Voting System</p>
+        <div className="text-blue-200 text-sm">© {new Date().getFullYear()} Student Voting System</div>
       </div>
 
-      {/* Form panel */}
-      <div className="flex items-center justify-center p-8 bg-slate-50">
-        <div className="w-full max-w-sm">
-          <div className="lg:hidden text-center mb-10">
-            <div className="text-5xl mb-3">🗳️</div>
+      {/* Right Section */}
+      <div className="w-full md:w-1/2 bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">
+          {/* Mobile logo */}
+          <div className="md:hidden text-center mb-8">
+            <div className="text-4xl mb-3">🗳️</div>
             <h1 className="text-2xl font-bold">VoteSystem</h1>
           </div>
 
           <h2 className="text-2xl font-bold text-slate-900 mb-1">Welcome back</h2>
-          <p className="text-slate-500 mb-8 text-sm">Sign in to access your voting portal</p>
+          <p className="text-slate-500 mb-6 text-sm">Sign in to access your voting portal</p>
 
           {error && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-6">
@@ -60,23 +70,41 @@ export default function Login() {
 
           <form onSubmit={submit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
-              <input type="email" className="input" placeholder="you@university.edu"
-                value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
+              <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+              <input
+                type="email"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                placeholder="student001@gmail.com"
+                value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })}
+                required
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
-              <input type="password" className="input" placeholder="••••••••"
-                value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
+              <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
+              <input
+                type="password"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={e => setForm({ ...form, password: e.target.value })}
+                required
+              />
             </div>
-            <button type="submit" className="btn-primary w-full py-3" disabled={loading}>
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              disabled={loading}
+            >
               {loading ? "Signing in…" : "Sign In →"}
             </button>
           </form>
 
           <p className="text-center text-sm text-slate-500 mt-6">
             No account?{" "}
-            <Link to="/register" className="text-indigo-600 font-semibold hover:underline">Register here</Link>
+            <Link to="/register" className="text-blue-600 font-semibold hover:underline">
+              Register here
+            </Link>
           </p>
         </div>
       </div>

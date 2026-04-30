@@ -3,29 +3,81 @@ import { api } from "../../api";
 
 export default function AdminDepartments() {
   const [departments, setDepartments] = useState<any[]>([]);
+  const [schools, setSchools] = useState<any[]>([]);
   const [editing, setEditing] = useState<any>(null);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ name: "", school_id: "" });
 
-  const load = () => api("/admin/departments").then(setDepartments);
+  const load = () => {
+    Promise.all([
+      api("/admin/departments").then(setDepartments),
+      api("/admin/schools").then(setSchools)
+    ]);
+  };
   useEffect(() => { load(); }, []);
 
   async function saveEdit(e: React.FormEvent) {
     e.preventDefault();
     await api(`/admin/departments/${editing.id}`, {
       method: "PUT",
-      body: JSON.stringify({ 
-        name: editing.name,
-        school_id: editing.school_id
-      }),
+      body: JSON.stringify({ name: editing.name, school_id: editing.school_id }),
     });
     setEditing(null); load();
   }
 
+  async function createDepartment(e: React.FormEvent) {
+    e.preventDefault();
+    await api("/admin/departments", {
+      method: "POST",
+      body: JSON.stringify({ name: form.name, school_id: form.school_id }),
+    });
+    setCreating(false); setForm({ name: "", school_id: "" }); load();
+  }
+
+  const getSchoolName = (schoolId: string) => {
+    return schools.find((s: any) => s.id === schoolId)?.name || schoolId;
+  };
+
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Departments</h1>
-        <p className="text-slate-500 text-sm mt-1">Manage departments</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Departments</h1>
+          <p className="text-slate-500 text-sm mt-1">Manage academic departments</p>
+        </div>
+        <button onClick={() => { setCreating(true); setForm({ name: "", school_id: "" }); }} className="btn-primary">
+          + Add Department
+        </button>
       </div>
+
+      {creating && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-md shadow-2xl">
+            <h2 className="font-semibold text-slate-900 mb-5">Create New Department</h2>
+            <form onSubmit={createDepartment} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
+                <input className="input" value={form.name}
+                  onChange={e => setForm({ ...form, name: e.target.value })} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">School</label>
+                <select className="input" value={form.school_id}
+                  onChange={e => setForm({ ...form, school_id: e.target.value })} required>
+                  <option value="">Select a school...</option>
+                  {schools.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="submit" className="btn-primary flex-1">Create Department</button>
+                <button type="button" onClick={() => setCreating(false)} className="btn-secondary flex-1">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {editing && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -38,9 +90,14 @@ export default function AdminDepartments() {
                   onChange={e => setEditing({ ...editing, name: e.target.value })} required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">School ID</label>
-                <input className="input" value={editing.school_id}
-                  onChange={e => setEditing({ ...editing, school_id: e.target.value })} required />
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">School</label>
+                <select className="input" value={editing.school_id || ""}
+                  onChange={e => setEditing({ ...editing, school_id: e.target.value })} required>
+                  <option value="">Select a school...</option>
+                  {schools.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="submit" className="btn-primary flex-1">Save Changes</button>
@@ -55,7 +112,7 @@ export default function AdminDepartments() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-100">
             <tr>
-              {["Department", "School ID", ""].map(h => (
+              {["Department", "School", ""].map(h => (
                 <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -67,14 +124,14 @@ export default function AdminDepartments() {
                   <div className="font-medium text-slate-900">{d.name}</div>
                 </td>
                 <td className="px-5 py-3.5">
-                  {d.school_id}
+                  <span className="text-slate-700">{getSchoolName(d.school_id)}</span>
                 </td>
                 <td className="px-5 py-3.5 text-right">
                   <div className="flex items-center justify-end gap-3">
                     <button onClick={() => setEditing({ id: d.id, name: d.name, school_id: d.school_id })}>
                       Edit
                     </button>
-                    <button onClick={async () => { if (confirm("Delete this department?")) { await api(`/admin/departments/${d.id}`, { method: "DELETE" }); load(); } }}>
+                    <button onClick={async () => { if (confirm("Delete this department?")) { await api(`/admin/departments/${d.id}`, { method: "DELETE" }); load(); } }} className="text-red-600 hover:text-red-700">
                       Delete
                     </button>
                   </div>

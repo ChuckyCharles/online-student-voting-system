@@ -19,6 +19,7 @@ class Role(str, enum.Enum):
 class ElectionStatus(str, enum.Enum):
     PENDING = "PENDING"
     ACTIVE = "ACTIVE"
+    PAUSED = "PAUSED"
     ENDED = "ENDED"
 
 

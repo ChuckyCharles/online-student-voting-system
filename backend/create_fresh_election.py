@@ -48,13 +48,13 @@ def create_position(election_id, name, level, school_id=None, department_id=None
     resp.raise_for_status()
     return resp.json()["id"]
 
-def create_candidate(election_id, position_id, name, description=None, image_url=None):
+def create_candidate(election_id, position_id, name, description=None, photo_url=None):
     body = {
         "election_id": election_id,
         "position_id": position_id,
         "name": name,
         "description": description,
-        "image_url": image_url,
+        "photo_url": photo_url,
     }
     resp = requests.post(f"{BASE_URL}/admin/candidates", json=body, headers=headers)
     resp.raise_for_status()

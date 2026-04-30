@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from app.models import Role, ElectionStatus, PositionLevel
 
 
@@ -58,8 +58,9 @@ class CandidateInElection(BaseModel):
     id: str
     name: str
     description: str | None = None
-    image_url: str | None = None
-    model_config = {"from_attributes": True}
+    photo_url: str | None = Field(default=None, alias='image_url')
+    
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 class ElectionOut(BaseModel):
     id: str
@@ -74,6 +75,11 @@ class ElectionOut(BaseModel):
 
 class StatusUpdate(BaseModel):
     status: ElectionStatus
+
+
+class ElectionTimeUpdate(BaseModel):
+    start_time: datetime | None = None
+    end_time: datetime | None = None
 
 
 # Positions
@@ -123,12 +129,13 @@ class CandidateOut(BaseModel):
     id: str
     name: str
     description: str | None
-    image_url: str | None
+    photo_url: str | None = Field(default=None, alias='image_url')
     position_id: str
     election_id: str
     position: PositionForCandidate | None = None
     election: ElectionForCandidate | None = None
-    model_config = {"from_attributes": True}
+    
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 # Voting
@@ -196,15 +203,18 @@ class DepartmentCreate(BaseModel):
 class CourseOut(BaseModel):
     id: str
     name: str
+    code: str | None = None
     department_id: str
     model_config = {"from_attributes": True}
 
 
 class CourseUpdate(BaseModel):
     name: str | None = None
+    code: str | None = None
     department_id: str | None = None
 
 
 class CourseCreate(BaseModel):
     name: str
+    code: str | None = None
     department_id: str

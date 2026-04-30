@@ -50,7 +50,7 @@ def list_elections(
                     "name": p.name,
                     "level": p.level.value if p.level else "UNIVERSITY",
                     "candidates": [
-                        {"id": c.id, "name": c.name, "description": c.description}
+                         {"id": c.id, "name": c.name, "description": c.description, "photo_url": c.image_url}
                         for c in p.candidates
                     ],
                 }

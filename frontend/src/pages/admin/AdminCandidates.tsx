@@ -15,7 +15,7 @@ export default function AdminCandidates() {
       body: JSON.stringify({ 
         name: editing.name, 
         description: editing.description,
-        image_url: editing.image_url
+        photo_url: editing.photo_url
       }),
     });
     setEditing(null); load();
@@ -44,12 +44,12 @@ export default function AdminCandidates() {
                    value={editing.description ?? ""}
                    onChange={e => setEditing({ ...editing, description: e.target.value })} />
                </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Image URL</label>
-                 <input className="input" placeholder="Optional image URL"
-                   value={editing.image_url ?? ""}
-                   onChange={e => setEditing({ ...editing, image_url: e.target.value })} />
-               </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Image URL</label>
+                  <input className="input" placeholder="Optional image URL"
+                    value={editing.photo_url ?? ""}
+                    onChange={e => setEditing({ ...editing, photo_url: e.target.value })} />
+                </div>
                <div className="flex gap-3 pt-1">
                  <button type="submit" className="btn-primary flex-1">Save Changes</button>
                  <button type="button" onClick={() => setEditing(null)} className="btn-secondary flex-1">Cancel</button>
@@ -81,7 +81,7 @@ export default function AdminCandidates() {
                 <td className="px-5 py-3.5 text-slate-500 text-xs max-w-[180px] truncate">{c.election?.title}</td>
                 <td className="px-5 py-3.5 text-right">
                   <div className="flex items-center justify-end gap-3">
-                     <button onClick={() => setEditing({ id: c.id, name: c.name, description: c.description ?? "", image_url: c.image_url ?? "" })}
+                      <button onClick={() => setEditing({ id: c.id, name: c.name, description: c.description ?? "", photo_url: c.photo_url ?? "" })}
                        className="text-indigo-500 hover:text-indigo-700 text-xs font-semibold transition-colors">Edit</button>
                     <button onClick={async () => { if (confirm("Delete this candidate?")) { await api(`/admin/candidates/${c.id}`, { method: "DELETE" }); load(); } }}
                       className="text-red-400 hover:text-red-600 text-xs font-semibold transition-colors">Delete</button>

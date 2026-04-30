@@ -3,12 +3,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.config import settings
 
-# PostgreSQL engine
+# Database engine (supports PostgreSQL and SQLite)
 engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
-    pool_recycle=300,
-    pool_timeout=30,
+    pool_recycle=300 if "postgresql" in settings.DATABASE_URL else None,
+    pool_timeout=30 if "postgresql" in settings.DATABASE_URL else None,
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
 )
 
 # Session
