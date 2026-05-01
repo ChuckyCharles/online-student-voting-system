@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routers import auth, elections, vote, results, admin
+from app.routers import auth, elections, vote, results, admin, user
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,7 +17,10 @@ app = FastAPI(title="Student Voting API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://online-student-voting-system.vercel.app"
+        "https://online-student-voting-system.vercel.app",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -28,6 +31,7 @@ app.include_router(elections.router)
 app.include_router(vote.router)
 app.include_router(results.router)
 app.include_router(admin.router)
+app.include_router(user.router)
 
 
 @app.get("/health")
